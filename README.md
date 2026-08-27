@@ -149,6 +149,47 @@ $var(x) = $si;
 $avp(tmp) = $hdr(X-Account-ID);
 ```
 
+### `$var()` vs `$avp()`
+
+Use `$var()` for local scratch values that are set and consumed during the same
+synchronous processing path. Treat `$var()` values as process-local working
+memory, not as per-message or per-transaction storage. Always assign a `$var()`
+before reading it in the same route path, and do not rely on it being `$null` at
+the start of request processing.
+
+Use `$avp()` when the value belongs to the SIP message or transaction: values
+copied from headers, URI parts, authentication state, database lookups, or any
+state that must still be correct in branch, failure, reply, or on-reply routes.
+AVPs are usually the safer default for call-specific state.
+
+Good:
+
+```kamailio
+$avp(account_id) = $hdr(X-Account-ID);
+
+$var(route_query) = "SELECT destination_uri FROM account_routes "
+                  + "WHERE account_id="
+                  + $(avp(account_id){sql.val});
+
+if ( sql_query("main_db", $var(route_query), "ra") < 0 ) {
+    xerr("route=LOOKUP sql failure callid=$ci account=$avp(account_id)\n");
+    sl_send_reply("500", "Lookup Failed");
+    exit;
+}
+```
+
+Avoid:
+
+```kamailio
+## This value may be stale or from another message when read later.
+$var(account_id) = $hdr(X-Account-ID);
+t_on_reply("ACCOUNT_REPLY");
+
+onreply_route[ACCOUNT_REPLY] {
+    xinfo("account=$var(account_id) callid=$ci\n");
+}
+```
+
 ## Indentation and Whitespace
 
 - Use four spaces for indentation.
