@@ -198,6 +198,8 @@ onreply_route[ACCOUNT_REPLY] {
 - Place two blank lines between route blocks.
 - Do not leave blank lines immediately after route declarations.
 - Keep braces on the same line as route declarations and control statements.
+- Put `else` and `else if` on a new line after the previous block's closing
+    brace.
 - Use inner white space for condition parentheses: write
     `if ( $var(i) == 0 )`, not `if ($var(i) == 0)`.
 - Do not use inner white space for function-call parentheses: write
@@ -211,10 +213,10 @@ Good:
 route[CHECK_SOURCE] {
     if ( $si == "10.0.0.1" ) {
         xinfo("trusted source ip=$si\n");
-        return;
     }
-
-    xwarn("untrusted source ip=$si\n");
+    else {
+        xwarn("untrusted source ip=$si\n");
+    }
 }
 
 
@@ -440,16 +442,21 @@ route[HANDLE_REGISTER] {
 ## Module Parameters
 
 Keep module parameters grouped by module and close to the corresponding
-`loadmodule` section when practical.
+`loadmodule` section when practical. Do not interleave `modparam` lines for
+different modules. Put one blank line between each module's `modparam` block.
 
 Good:
 
 ```kamailio
 loadmodule "tm.so"
 loadmodule "sl.so"
+loadmodule "rr.so"
 
 modparam("tm", "failure_reply_mode", 3)
 modparam("tm", "fr_timer", 30000)
+
+modparam("rr", "enable_full_lr", 1)
+modparam("rr", "append_fromtag", 1)
 ```
 
 When a parameter value is environment-specific, prefer a named preprocessor
